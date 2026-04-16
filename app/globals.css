@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #000000;
+
+  --font-antonio: "Antonio", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  --animate-flicker: flicker 2s infinite;
+  --animate-scan-line: scan 3s linear infinite;
+  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+
+  @keyframes flicker {
+    0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
+    20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; }
+  }
+
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(1000%); }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 4px rgba(125, 211, 252, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(125, 211, 252, 0.5), 0 0 30px rgba(125, 211, 252, 0.5); }
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Antonio:wght@100..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+body {
+  background-color: #000000;
+  color: #bae6fd; /* sky-200 */
+  font-family: 'Space Mono', monospace;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Antonio', sans-serif;
+  text-transform: uppercase;
+}
+
+.glass-panel {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(7, 89, 133, 0.5); /* sky-800/50 */
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.05);
+}
+
+.ncars-button {
+  background-color: #334155; /* slate-700 */
+  color: #bae6fd; /* sky-200 */
+  font-family: 'Antonio', sans-serif;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.25rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.ncars-button:hover {
+  background-color: #075985; /* sky-800 */
+  box-shadow: 0 0 15px rgba(7, 89, 133, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #000000;
+  border-left: 1px solid rgba(7, 89, 133, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155; /* slate-700 */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #075985; /* sky-800 */
+}
