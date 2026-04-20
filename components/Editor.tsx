@@ -12,10 +12,13 @@ import { $patchStyleText, $setBlocksType } from '@lexical/selection';
 import { ListNode, ListItemNode, INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ImageNode, $createImageNode, ImagePayload } from './editor/ImageNode';
 import { LayoutContainerNode, $createLayoutContainerNode, $isLayoutContainerNode } from './editor/LayoutContainerNode';
 import { LayoutItemNode, $createLayoutItemNode, $isLayoutItemNode } from './editor/LayoutItemNode';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { auth } from '@/lib/firebase';
+import { saveCaptainLog, updateCaptainLog } from '@/lib/logUtils';
 
 export const INSERT_IMAGE_COMMAND: LexicalCommand<ImagePayload> = createCommand('INSERT_IMAGE_COMMAND');
 
@@ -70,9 +73,11 @@ function ImagePlugin() {
 }
 
 // LCARS Custom Toolbar
-function ToolbarPlugin({ onSave }: { onSave?: (jsonState: string) => void }) {
+function ToolbarPlugin({ onSave, logTitle, existingId }: { onSave?: (jsonState: string) => Promise<void>, logTitle: string, existingId?: string }) {
   const [editor] = useLexicalComposerContext();
+  const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [isInsideLayout, setIsInsideLayout] = useState(false);
 
   useEffect(() => {
@@ -163,41 +168,62 @@ function ToolbarPlugin({ onSave }: { onSave?: (jsonState: string) => void }) {
       });
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload image to Cloudinary.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSave = () => {
-    const state = editor.getEditorState();
-    const jsonString = JSON.stringify(state.toJSON());
-    onSave?.(jsonString);
-    alert("LOG PERSISTED TO DATABASE");
+  const handleSave = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      return;
+    }
+    if (!logTitle.trim()) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const state = editor.getEditorState();
+      const jsonString = JSON.stringify(state.toJSON());
+      
+      if (onSave) {
+        await onSave(jsonString);
+      } else if (existingId) {
+        await updateCaptainLog(existingId, jsonString, logTitle);
+        router.push('/portfolio/' + existingId);
+      } else {
+        const newId = await saveCaptainLog(jsonString, logTitle, userId);
+        router.push('/portfolio/' + newId);
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-orange-700 pb-2 mb-4 flex flex-wrap gap-2 p-2 items-center min-h-[64px]">
-      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} className="ncars-button text-xs">BOLD</button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} className="ncars-button text-xs">ITALIC</button>
+    <div className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-[#CC4444] p-2 flex flex-wrap gap-2 items-center min-h-[64px] shrink-0">
+      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} className="ncars-button text-xs font-okuda">BOLD</button>
+      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} className="ncars-button text-xs font-okuda">ITALIC</button>
       
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
       
-      <button onClick={() => formatHeading('h1')} className="ncars-button text-xs">H1</button>
-      <button onClick={() => formatHeading('h2')} className="ncars-button text-xs">H2</button>
-      <button onClick={() => formatHeading('h3')} className="ncars-button text-xs">H3</button>
-      <button onClick={() => formatHeading('paragraph')} className="ncars-button text-xs bg-slate-600 text-sky-200">[ NORMAL TEXT ]</button>
+      <button onClick={() => formatHeading('h1')} className="ncars-button text-xs font-okuda">H1</button>
+      <button onClick={() => formatHeading('h2')} className="ncars-button text-xs font-okuda">H2</button>
+      <button onClick={() => formatHeading('paragraph')} className="ncars-button text-xs bg-slate-600 text-sky-200 font-okuda">[ NORMAL ]</button>
       
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
       
-      <button onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} className="ncars-button text-xs">BULLETS</button>
-      <button onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} className="ncars-button text-xs">NUMBERS</button>
+      <button onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} className="ncars-button text-xs font-okuda">UL</button>
+      <button onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} className="ncars-button text-xs font-okuda">OL</button>
       
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
 
-      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} className="ncars-button text-xs">LEFT</button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} className="ncars-button text-xs">CENTER</button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} className="ncars-button text-xs">RIGHT</button>
+      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} className="ncars-button text-xs font-okuda">LEFT</button>
+      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} className="ncars-button text-xs font-okuda">CENTER</button>
+      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} className="ncars-button text-xs font-okuda">RIGHT</button>
 
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
 
@@ -267,37 +293,53 @@ function ToolbarPlugin({ onSave }: { onSave?: (jsonState: string) => void }) {
 
       <div className="flex-1 min-w-[20px]" />
 
-      <button onClick={handleSave} className="ncars-button text-xs bg-orange-700 font-bold hover:bg-orange-600 shadow-[0_0_10px_rgba(194,65,12,0.5)]">
-        [ SAVE LOG ]
+      <button onClick={handleSave} disabled={saving} className={`ncars-button text-xs bg-orange-700 font-bold hover:bg-orange-600 shadow-[0_0_10px_rgba(194,65,12,0.5)] ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}>
+        [ {saving ? "SAVING..." : "SAVE LOG"} ]
       </button>
     </div>
   );
 }
 
-export default function LexicalEditor({ onSave }: { onSave?: (jsonState: string) => void }) {
+export default function LexicalEditor({ onSave, initialState, existingId, logTitle = "" }: { onSave?: (jsonState: string) => Promise<void>, initialState?: string, existingId?: string, logTitle?: string }) {
+  const [title, setTitle] = useState(logTitle);
+
   const initialConfig = {
     namespace: 'NCARSEditor',
     theme,
     nodes,
+    editorState: initialState || undefined,
     onError: (error: Error) => console.error(error),
   };
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div className="border border-sky-800 bg-black/80 relative rounded-md overflow-hidden flex flex-col">
-        <ToolbarPlugin onSave={onSave} />
-        <div className="relative p-4 min-h-[500px] text-sm overflow-y-auto custom-scrollbar">
-          <RichTextPlugin
-            contentEditable={<ContentEditable className="outline-none min-h-[500px]" />}
-            placeholder={<div className="absolute top-4 left-4 text-sky-800/50 pointer-events-none">Awaiting input...</div>}
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <HistoryPlugin />
-          <AutoFocusPlugin />
-          <ListPlugin />
-          <ImagePlugin />
-        </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <label className="text-[10px] uppercase font-mono tracking-widest text-[#9CB4CC]">Log Title / Identifier</label>
+        <input 
+          type="text" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="ENTER TITLE..."
+          className="bg-black border border-sky-800 text-[#9CB4CC] p-3 text-sm focus:border-orange-700 outline-none uppercase font-okuda tracking-widest"
+        />
       </div>
-    </LexicalComposer>
+
+      <LexicalComposer initialConfig={initialConfig}>
+        <div className="border border-sky-800 bg-black/80 relative rounded-md flex flex-col min-h-0">
+          <ToolbarPlugin onSave={onSave} logTitle={title} existingId={existingId} />
+          <div className="relative p-4 min-h-[500px] text-sm overflow-y-auto custom-scrollbar">
+            <RichTextPlugin
+              contentEditable={<ContentEditable className="outline-none min-h-[400px]" />}
+              placeholder={<div className="absolute top-4 left-4 text-sky-800/50 pointer-events-none">Awaiting input...</div>}
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <HistoryPlugin />
+            <AutoFocusPlugin />
+            <ListPlugin />
+            <ImagePlugin />
+          </div>
+        </div>
+      </LexicalComposer>
+    </div>
   );
 }
