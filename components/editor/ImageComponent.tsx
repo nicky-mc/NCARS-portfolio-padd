@@ -165,6 +165,22 @@ export default function ImageComponent({
     });
   };
 
+  const setWidthPct = (pct: number) => {
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isImageNode(node)) {
+        const editorElement = editor.getRootElement();
+        if (editorElement) {
+          const maxWidth = editorElement.getBoundingClientRect().width;
+          const newWidth = Math.floor(maxWidth * (pct / 100));
+          node.setWidthAndHeight(newWidth, 'inherit');
+          setResizerWidth(newWidth);
+          setResizerHeight('inherit');
+        }
+      }
+    });
+  };
+
   let containerClass = 'relative inline-block';
   if (alignment === 'left') {
     containerClass += ' float-left mr-4 mb-4';
@@ -209,25 +225,35 @@ export default function ImageComponent({
         )}
       </div>
       {isSelected && !isResizing && (
-        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black border border-sky-800 flex flex-row w-max gap-2 p-1 z-[100] glass-panel">
-          <button
-            onClick={(e) => { e.preventDefault(); setAlignment('left'); }}
-            className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'left' ? 'bg-slate-700 text-sky-200' : 'text-sky-200 hover:bg-sky-800/50'}`}
-          >
-            [ Float Left ]
-          </button>
-          <button
-            onClick={(e) => { e.preventDefault(); setAlignment('center'); }}
-            className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'center' ? 'bg-slate-700 text-sky-200' : 'text-sky-200 hover:bg-sky-800/50'}`}
-          >
-            [ Center Block ]
-          </button>
-          <button
-            onClick={(e) => { e.preventDefault(); setAlignment('right'); }}
-            className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'right' ? 'bg-slate-700 text-sky-200' : 'text-sky-200 hover:bg-sky-800/50'}`}
-          >
-            [ Float Right ]
-          </button>
+        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-black border border-sky-800 flex flex-row items-center w-max gap-2 p-1 z-[100] glass-panel rounded-md">
+          <div className="flex flex-row gap-1 border-r border-sky-800/50 pr-2 mr-1">
+            <button
+              onClick={(e) => { e.preventDefault(); setAlignment('left'); }}
+              className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'left' ? 'bg-slate-700 text-sky-200 underline' : 'text-sky-200 hover:bg-sky-800/50'}`}
+              title="Align Left"
+            >
+              [ L ]
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); setAlignment('center'); }}
+              className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'center' ? 'bg-slate-700 text-sky-200 underline' : 'text-sky-200 hover:bg-sky-800/50'}`}
+              title="Align Center"
+            >
+              [ C ]
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); setAlignment('right'); }}
+              className={`ncars-button whitespace-nowrap px-3 py-1 text-xs ${alignment === 'right' ? 'bg-slate-700 text-sky-200 underline' : 'text-sky-200 hover:bg-sky-800/50'}`}
+              title="Align Right"
+            >
+              [ R ]
+            </button>
+          </div>
+          <div className="flex flex-row gap-1">
+            <button onClick={(e) => { e.preventDefault(); setWidthPct(25); }} className="ncars-button px-2 py-1 text-[10px] hover:bg-sky-800/50">[ 25% ]</button>
+            <button onClick={(e) => { e.preventDefault(); setWidthPct(50); }} className="ncars-button px-2 py-1 text-[10px] hover:bg-sky-800/50">[ 50% ]</button>
+            <button onClick={(e) => { e.preventDefault(); setWidthPct(100); }} className="ncars-button px-2 py-1 text-[10px] hover:bg-sky-800/50">[ 100% ]</button>
+          </div>
         </div>
       )}
     </span>

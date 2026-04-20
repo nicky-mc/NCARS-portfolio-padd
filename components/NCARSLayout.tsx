@@ -5,18 +5,6 @@ import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
-const NavLinks = ({ isAdmin, user, handleLogin }: { isAdmin: boolean, user: any, handleLogin: () => void }) => (
-  <>
-    <Link href="/" className="w-full px-4 py-2 bg-slate-700 text-sky-200 text-xs font-bold whitespace-nowrap rounded-full text-right hover:bg-sky-800 transition-colors">01 // Comm Center</Link>
-    <Link href="/portfolio" className="w-full px-4 py-2 bg-slate-700 text-sky-200 text-xs font-bold whitespace-nowrap rounded-full text-right hover:bg-sky-800 transition-colors">02 // Databanks</Link>
-    <Link href="/personnel" className="w-full px-4 py-2 bg-slate-700 text-sky-200 text-xs font-bold whitespace-nowrap rounded-full text-right hover:bg-sky-800 transition-colors">03 // Personnel</Link>
-    {isAdmin && <Link href="/admin" className="w-full px-4 py-2 bg-red-800 text-sky-200 text-xs font-bold whitespace-nowrap rounded-full text-right hover:bg-red-900 transition-colors">04 // Captain&apos;s Log</Link>}
-    <button onClick={handleLogin} className="w-full px-4 py-2 bg-orange-700 text-sky-200 text-xs font-bold whitespace-nowrap rounded-full text-right hover:bg-orange-800 transition-colors mt-4">
-      {user ? "LOGOUT" : "LOGIN"}
-    </button>
-  </>
-);
-
 export default function NCARSLayout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -54,67 +42,94 @@ export default function NCARSLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden text-sky-200">
-      {/* Mobile Hamburger Header */}
-      <div className="md:hidden absolute top-0 w-full h-16 border-b border-sky-800 flex items-center justify-between px-4 z-50 glass-panel">
-        <span className="font-antonio text-2xl tracking-widest text-orange-700">NCARS 25</span>
-        <button onClick={() => setMenuOpen(!menuOpen)} className="text-sky-200 font-mono border border-sky-800 px-2 py-1">
-          {menuOpen ? "CLOSE" : "MENU"}
-        </button>
-      </div>
-
-      {/* Mobile Drawer */}
+    <div className="flex h-[100dvh] w-full bg-black text-white overflow-hidden font-mono uppercase tracking-widest">
+      {/* Mobile Backdrop */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div 
-            initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-            className="absolute inset-y-0 left-0 w-64 glass-panel z-40 pt-16 border-r border-sky-800 md:hidden"
-          >
-            <NavLinks isAdmin={isAdmin} user={user} handleLogin={handleLogin} />
-          </motion.div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 bg-black/80 z-40 md:hidden"
+          />
         )}
       </AnimatePresence>
 
-      {/* Mobile Content Area */}
-      <div className="md:hidden flex-1 pt-16 overflow-y-auto p-4">
-        {children}
-      </div>
-
-      {/* Desktop LCARS Layout */}
-      <div className="hidden md:flex h-screen w-full bg-black text-sky-200 p-4">
-        {/* Left Column (Sidebar) */}
-        <div className="w-48 flex flex-col">
-          {/* The Top-Left Corner Block (The Elbow Joint) */}
-          <div className="w-full h-16 bg-slate-700 rounded-tl-3xl rounded-bl-none flex items-center justify-end pr-4">
-            <span className="font-antonio text-2xl text-sky-200 font-bold tracking-tighter">NCARS</span>
-          </div>
-          
-          {/* The Menu Area */}
-          <div className="flex-1 flex flex-col gap-4 mt-4 mr-4">
-            <NavLinks isAdmin={isAdmin} user={user} handleLogin={handleLogin} />
-            {/* Decorative LCARS blocks */}
-            <div className="h-12 w-full bg-slate-300 rounded-full mt-auto" />
-            <div className="h-6 w-full bg-red-800 rounded-full" />
-            <div className="h-32 w-full bg-orange-700 rounded-full mb-4" />
-          </div>
+      {/* LEFT COLUMN - SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 h-full flex flex-col transition-transform duration-300 md:relative md:translate-x-0 bg-black ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* ELBOW VERTICAL DROP - Taller (h-40) to create the heavy LCARS spine. Flush right. */}
+        <div className="h-40 w-full bg-[#4A5D70] rounded-tl-[2.5rem] flex items-end justify-end p-4 pb-2 flex-none">
+          <h1 className="text-3xl font-bold font-antonio tracking-widest uppercase text-[#9CB4CC]">NCARS</h1>
         </div>
-
-        {/* Right Column (Main Area) */}
-        <div className="flex-1 flex flex-col">
-          {/* The Top Bar */}
-          <div className="w-full h-16 bg-slate-700 rounded-tr-3xl relative">
-            <div className="absolute inset-0 bg-slate-700 rounded-tr-3xl rounded-bl-3xl flex items-center justify-end px-4 gap-2">
-              <div className="h-8 w-20 bg-slate-300 rounded-full flex-none"></div>
-              <div className="h-8 w-12 bg-red-800 rounded-full flex-none"></div>
-            </div>
-          </div>
+        
+        {/* NAV PANELS - Hardware blocks. COMPLETELY flush to the right, sharp edges, stacked with tight gaps */}
+        <nav className="flex-1 overflow-y-auto pt-1 pr-0 flex flex-col gap-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <Link href="/" onClick={() => setMenuOpen(false)} className="w-full text-right bg-[#3A4B5C] text-[#9CB4CC] rounded-none py-3 px-4 text-sm font-bold hover:bg-[#CC4444] transition-colors whitespace-nowrap">01 // Comm Center</Link>
+          <Link href="/portfolio" onClick={() => setMenuOpen(false)} className="w-full text-right bg-[#3A4B5C] text-[#9CB4CC] rounded-none py-3 px-4 text-sm font-bold hover:bg-[#CC4444] transition-colors whitespace-nowrap">02 // Databanks</Link>
+          <Link href="/personnel" onClick={() => setMenuOpen(false)} className="w-full text-right bg-[#3A4B5C] text-[#9CB4CC] rounded-none py-3 px-4 text-sm font-bold hover:bg-[#CC4444] transition-colors whitespace-nowrap">03 // Personnel</Link>
+          {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)} className="w-full text-right bg-[#CC4444] text-white rounded-none py-3 px-4 text-sm font-bold hover:bg-red-900 transition-colors whitespace-nowrap">04 // Captain&apos;s Log</Link>}
           
-          {/* The Page Content */}
-          <div className="flex-1 overflow-auto mt-4 custom-scrollbar">
+          <button onClick={() => { handleLogin(); setMenuOpen(false); }} className="w-full text-right bg-[#3A4B5C] text-[#9CB4CC] rounded-none py-3 px-4 text-sm font-bold hover:bg-[#CC4444] transition-colors mt-4">
+            {user ? "LOGOUT" : "LOGIN"}
+          </button>
+
+          {/* Decorative LCARS blocks - Panels (squared). Flush right. */}
+          <div className="mt-auto flex flex-col gap-1 pb-4 pr-0">
+            <div className="h-12 w-full bg-[#9CB4CC] rounded-none opacity-80" />
+            <div className="h-6 w-full bg-[#CC4444] rounded-none opacity-80" />
+            <div className="h-24 w-full bg-[#3A4B5C] rounded-none opacity-80" />
+          </div>
+        </nav>
+      </aside>
+
+      {/* RIGHT COLUMN - MAIN AREA (This background color is the secret to the inner curve) */}
+      <main className="flex-1 flex flex-col h-[100dvh] bg-[#4A5D70] max-w-full overflow-hidden">
+        {/* TOP HEADER - This restores the visible horizontal top bar! */}
+        <header className="h-12 w-full bg-[#4A5D70] flex items-center justify-end px-4 gap-4 flex-none m-0">
+          {/* Mobile Menu Toggle */}
+          <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-[#9CB4CC] font-mono border border-[#3A4B5C] px-2 py-1 flex-none bg-black/20">
+            MENU
+          </button>
+          
+          <div className="hidden md:flex items-center gap-2 text-xs font-bold">
+            <div className="h-6 w-16 bg-[#9CB4CC] rounded-none flex-none"></div>
+            <div className="h-6 w-8 bg-[#CC4444] rounded-none flex-none"></div>
+            <div className="h-6 w-24 bg-[#3A4B5C] rounded-none flex-none"></div>
+          </div>
+        </header>
+
+        {/* GLOBAL PAGE WRAPPER - bg-black with rounded-tl creates the flawless inner curve! */}
+        <div className="flex-1 flex flex-col overflow-hidden p-4 md:p-8 w-full bg-black rounded-tl-[2.5rem] shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]">
+          
+          {/* GLOBAL TOP TELEMETRY - Hidden on small screens */}
+          <div className="hidden xl:flex w-full h-4 gap-2 items-end opacity-80 mb-6 shrink-0 flex-none">
+            <div className="h-4 w-48 bg-[#4A5D70] flex items-center justify-end px-2">
+              <span className="text-[0.6rem] text-black font-okuda tracking-widest uppercase">CMD-883</span>
+            </div>
+            <div className="h-2 w-16 bg-[#CC4444]"></div>
+            <div className="h-4 flex-1 bg-[#3A4B5C] flex items-center justify-between px-4">
+              <span className="text-[0.6rem] text-[#9CB4CC] font-okuda uppercase tracking-widest leading-none">ALPHA SHIFT // DIAGNOSTIC ROUTE</span>
+              <span className="text-[0.6rem] text-[#9CB4CC] font-okuda uppercase tracking-widest leading-none">S-04-747</span>
+            </div>
+            <div className="h-4 w-24 bg-[#9CB4CC]"></div>
+          </div>
+
+          {/* SCROLLABLE PAGE CONTENT - This holds LandingPage, Editor, etc. */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 w-full pr-2 custom-scrollbar">
             {children}
           </div>
+
+          {/* GLOBAL BOTTOM TELEMETRY - Hidden on small screens */}
+          <div className="hidden xl:flex w-full mt-4 items-start gap-2 shrink-0 flex-none">
+            <div className="h-8 w-3/4 bg-[#4A5D70] rounded-tr-[2rem] flex items-start justify-end p-2 border-t-4 border-black">
+              <span className="text-[0.6rem] text-black font-okuda font-bold tracking-widest uppercase">Sub-System Routing Active</span>
+            </div>
+            <div className="h-3 w-32 bg-[#CC4444]"></div>
+            <div className="h-3 flex-1 bg-[#3A4B5C]"></div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

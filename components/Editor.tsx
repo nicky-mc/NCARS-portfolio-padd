@@ -70,7 +70,7 @@ function ImagePlugin() {
 }
 
 // LCARS Custom Toolbar
-function ToolbarPlugin() {
+function ToolbarPlugin({ onSave }: { onSave?: (jsonState: string) => void }) {
   const [editor] = useLexicalComposerContext();
   const [uploading, setUploading] = useState(false);
   const [isInsideLayout, setIsInsideLayout] = useState(false);
@@ -102,6 +102,31 @@ function ToolbarPlugin() {
     });
   };
 
+  const addParagraphBelow = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const node = selection.anchor.getNode();
+        const container = node.getParents().find($isLayoutContainerNode) || node.getParents().find($isLayoutItemNode);
+        
+        if (container) {
+          const actualContainer = $isLayoutItemNode(container) ? container.getParent() : container;
+          if (actualContainer) {
+            const newParagraph = $createParagraphNode();
+            actualContainer.insertAfter(newParagraph);
+            newParagraph.select();
+          }
+        } else {
+          const p = $createParagraphNode();
+          const selection = $getSelection();
+          if (selection) {
+             selection.insertNodes([p]);
+          }
+        }
+      }
+    });
+  };
+
   const applyStyle = (styleRecord: Record<string, string>) => {
     editor.update(() => {
       const selection = $getSelection();
@@ -111,11 +136,15 @@ function ToolbarPlugin() {
     });
   };
 
-  const formatHeading = (headingSize: HeadingTagType) => {
+  const formatHeading = (headingSize: HeadingTagType | 'paragraph') => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
-        $setBlocksType(selection, () => $createHeadingNode(headingSize));
+        if (headingSize === 'paragraph') {
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createHeadingNode(headingSize));
+        }
       }
     });
   };
@@ -140,8 +169,15 @@ function ToolbarPlugin() {
     }
   };
 
+  const handleSave = () => {
+    const state = editor.getEditorState();
+    const jsonString = JSON.stringify(state.toJSON());
+    onSave?.(jsonString);
+    alert("LOG PERSISTED TO DATABASE");
+  };
+
   return (
-    <div className="flex flex-wrap gap-2 mb-2 p-2 glass-panel border-b-2 border-slate-500 items-center">
+    <div className="sticky top-0 z-40 bg-black/95 backdrop-blur-sm border-b border-orange-700 pb-2 mb-4 flex flex-wrap gap-2 p-2 items-center min-h-[64px]">
       <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} className="ncars-button text-xs">BOLD</button>
       <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} className="ncars-button text-xs">ITALIC</button>
       
@@ -150,6 +186,7 @@ function ToolbarPlugin() {
       <button onClick={() => formatHeading('h1')} className="ncars-button text-xs">H1</button>
       <button onClick={() => formatHeading('h2')} className="ncars-button text-xs">H2</button>
       <button onClick={() => formatHeading('h3')} className="ncars-button text-xs">H3</button>
+      <button onClick={() => formatHeading('paragraph')} className="ncars-button text-xs bg-slate-600 text-sky-200">[ NORMAL TEXT ]</button>
       
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
       
@@ -161,7 +198,6 @@ function ToolbarPlugin() {
       <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} className="ncars-button text-xs">LEFT</button>
       <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} className="ncars-button text-xs">CENTER</button>
       <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} className="ncars-button text-xs">RIGHT</button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'justify')} className="ncars-button text-xs">JUSTIFY</button>
 
       <div className="h-4 w-px bg-sky-800/50 mx-1" />
 
@@ -175,7 +211,7 @@ function ToolbarPlugin() {
           container.append(item1, item2);
           $insertNodes([container]);
         });
-      }} className="ncars-button text-xs">2 COLUMNS</button>
+      }} className="ncars-button text-xs">2 COL</button>
 
       <button onClick={() => {
         editor.update(() => {
@@ -189,7 +225,11 @@ function ToolbarPlugin() {
           container.append(item1, item2, item3);
           $insertNodes([container]);
         });
-      }} className="ncars-button text-xs">3 COLUMNS</button>
+      }} className="ncars-button text-xs">3 COL</button>
+
+      <button onClick={addParagraphBelow} className="ncars-button text-xs bg-sky-900 border-sky-700">
+        [ ADD PARAGRAPH BELOW ]
+      </button>
 
       {isInsideLayout && (
         <button onClick={deleteLayout} className="ncars-button text-xs bg-red-800 text-sky-200 hover:bg-red-900 border-red-800">
@@ -215,7 +255,7 @@ function ToolbarPlugin() {
         <option value="Montserrat">Montserrat</option>
         <option value="Oswald">Oswald</option>
         <option value="Source Code Pro">Source Code Pro</option>
-        <option value="Roboto Condensed">Roboto Condensed</option>
+        <option value="Galaxy">Galaxy (Starfleet)</option>
       </select>
 
       <input type="color" onChange={(e) => applyStyle({ color: e.target.value })} className="w-8 h-8 bg-black border border-sky-800 cursor-pointer" title="Text Color" />
@@ -224,11 +264,17 @@ function ToolbarPlugin() {
         {uploading ? "UPLOADING..." : "UPLOAD MEDIA"}
         <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
       </label>
+
+      <div className="flex-1 min-w-[20px]" />
+
+      <button onClick={handleSave} className="ncars-button text-xs bg-orange-700 font-bold hover:bg-orange-600 shadow-[0_0_10px_rgba(194,65,12,0.5)]">
+        [ SAVE LOG ]
+      </button>
     </div>
   );
 }
 
-export default function LexicalEditor() {
+export default function LexicalEditor({ onSave }: { onSave?: (jsonState: string) => void }) {
   const initialConfig = {
     namespace: 'NCARSEditor',
     theme,
@@ -239,10 +285,10 @@ export default function LexicalEditor() {
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div className="border border-sky-800 bg-black/80 relative rounded-md overflow-hidden flex flex-col">
-        <ToolbarPlugin />
-        <div className="relative p-4 min-h-[400px] text-sm">
+        <ToolbarPlugin onSave={onSave} />
+        <div className="relative p-4 min-h-[500px] text-sm overflow-y-auto custom-scrollbar">
           <RichTextPlugin
-            contentEditable={<ContentEditable className="outline-none min-h-[400px]" />}
+            contentEditable={<ContentEditable className="outline-none min-h-[500px]" />}
             placeholder={<div className="absolute top-4 left-4 text-sky-800/50 pointer-events-none">Awaiting input...</div>}
             ErrorBoundary={LexicalErrorBoundary}
           />
